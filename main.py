@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 09:54:57
 LastEditors: Mike
-LastEditTime: 2020-11-11 13:46:16
+LastEditTime: 2020-11-11 18:42:54
 FilePath: \BangumiCrawler\main.py
 '''
 # from py2neo import Graph, Node, Relationship
@@ -36,3 +36,15 @@ FilePath: \BangumiCrawler\main.py
 #         print(rs3)
 #     else:
 #         print("Not Found")
+
+from writer import WriterProcess
+from multiprocessing import Queue
+
+if __name__ == "__main__":
+    writerCount = 4
+    bangumiQueue = Queue()
+    for i in range (0, writerCount):
+        process = WriterProcess(i+1, 2*(i+1), bangumiQueue)
+        process.start()
+
+    

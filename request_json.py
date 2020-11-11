@@ -1,13 +1,14 @@
 '''
 Date: 2020-11-10 19:58:06
 LastEditors: Mike
-LastEditTime: 2020-11-10 21:41:48
-FilePath: \Bangumi\request_json.py
+LastEditTime: 2020-11-11 16:58:08
+FilePath: \BangumiCrawler\request_json.py
 '''
 
 import requests
 import encodings
 import random
+import unicodedata
 
 userAgents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36 Edg/86.0.622.63",
@@ -28,4 +29,13 @@ def get_subject_json(id):
         'User-Agent': random.choice(userAgents)
         }
     url = 'https://api.bgm.tv/subject/' + str(id) + '?responseGroup=medium'
-    return requests.get(url, headers=headers).text.replace("\/", "/").encode().decode("unicode_escape")
+    text = requests.get(url, headers=headers).text.encode().decode("unicode_escape").replace("\\/", "/").replace("\r\n", "\\r\\n") 
+    text = unicodedata.normalize('NFKD', text)
+    return text
+
+if __name__ == "__main__":
+    import json
+    from define import Bangumi
+    test = get_subject_json(2)
+    subjectJsonDict = json.loads(test)
+    print (Bangumi.shouldInclude(subjectJsonDict))

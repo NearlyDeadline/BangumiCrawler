@@ -1,10 +1,10 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-11 13:08:36
-FilePath: \Bangumi\define.py
+LastEditTime: 2020-11-11 18:45:39
+FilePath: \BangumiCrawler\define.py
 '''  
-import json
+
 from enum import Enum
 class PersonJob(Enum):
     配音 = 1
@@ -43,7 +43,7 @@ class Character: # 二次元虚拟角色
     # str: 中文名"name_cn"
     name = ""
 
-    # str: 性别"info"."gender"
+    # str: 性别"info"."gender"，不是每个角色都有这一项
     gender = ""
 
     # [Person]: 配音"crt"."actors"
@@ -104,7 +104,11 @@ class Bangumi:
             crt = Character()  # character简写，代表一个虚拟角色
             crt.characterID = characterDict["id"]
             crt.name = characterDict["name_cn"]
-            crt.gender = characterDict["info"]["gender"]
+            
+            if (characterDict["info"].get("gender", None)):
+                crt.gender = characterDict["info"]["gender"]
+            else:
+                crt.gender = None
 
             if (characterDict["info"].get("人设", None)):
                 crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
@@ -132,7 +136,7 @@ class Bangumi:
     return {Bool} result
     '''
     @staticmethod
-    def isWorthy(subjectJsonDict):
+    def shouldInclude(subjectJsonDict):
         if subjectJsonDict["type"] != 2: # 不是动画
             return False
         ratingCount = subjectJsonDict["rating"]["total"]
@@ -178,6 +182,7 @@ class Bangumi:
     staff = []
 
 if __name__ == "__main__":
+    import json
     test = json.load(open("SubjectMediumExample.json", encoding="utf-8"))
     bangumi = Bangumi(test)
     for crt in bangumi.characters:
