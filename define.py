@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-11 18:57:57
+LastEditTime: 2020-11-11 23:17:32
 FilePath: \BangumiCrawler\define.py
 '''  
 
@@ -43,13 +43,13 @@ class Character: # 二次元虚拟角色
     # str: 中文名"name_cn"
     name = ""
 
-    # str: 性别"info"."gender"，不是每个角色都有这一项
+    # str: 性别"info"."gender"，不是每个角色都有这一项，没有时值为"未知"
     gender = ""
 
     # [Person]: 配音"crt"."actors"
     actors = []
 
-    # Person: 人设"crt"."info"."人设"，不是每个角色都有这一项
+    # Person: 人设"crt"."info"."人设"，不是每个角色都有这一项，没有时值为"未知"
     setting = None
 
     
@@ -108,12 +108,12 @@ class Bangumi:
             if (characterDict["info"].get("gender", None)):
                 crt.gender = characterDict["info"]["gender"]
             else:
-                crt.gender = None
+                crt.gender = "未知"
 
             if (characterDict["info"].get("人设", None)):
                 crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
             else:
-                crt.setting = None
+                crt.setting = Person(-1, "未知", PersonJob.人物设定)
 
             crt.actors = []
             for actorDict in characterDict["actors"]:
