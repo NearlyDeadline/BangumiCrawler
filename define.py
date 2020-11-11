@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-11 18:45:39
+LastEditTime: 2020-11-11 18:57:57
 FilePath: \BangumiCrawler\define.py
 '''  
 

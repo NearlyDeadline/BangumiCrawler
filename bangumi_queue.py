@@ -1,35 +1,36 @@
 '''
 Date: 2020-11-10 21:04:33
 LastEditors: Mike
-LastEditTime: 2020-11-11 18:43:15
+LastEditTime: 2020-11-11 20:40:56
 FilePath: \BangumiCrawler\bangumi_queue.py
 '''
 
-from multiprocessing import Lock
+from multiprocessing import Lock, Value, Queue
 
 class RunningWriterProcessCounter:
-    # int: 
-    __processCount = 0
-
-    __lock = Lock()
+    # int: 写者进程数目
+    __processCount = Value('i', 4)
     
-    @classmethod
-    def __init__(cls, num):
-        cls.__processCount = num
+    __lock = Lock()
 
-    @classmethod
-    def getCount(cls): # cls作为参数是王八的屁股——规定
-        return cls.__processCount
+    @staticmethod
+    def getCount(): # cls作为参数是王八的屁股——规定
+        return RunningWriterProcessCounter.__processCount.value
 
-    @classmethod
-    def run(cls):
-        cls.__lock.acquire()
-        cls.__processCount -= 1
-        cls.__lock.release()
+    @staticmethod
+    def run():
+        RunningWriterProcessCounter.__lock.acquire()
+        RunningWriterProcessCounter.__processCount.value -= 1
+        print(RunningWriterProcessCounter.__processCount.value)
+        RunningWriterProcessCounter.__lock.release()
 
-    @classmethod
-    def terminate(cls):
-        cls.__lock.acquire()
-        cls.__processCount += 1
-        cls.__lock.release()
+    @staticmethod
+    def terminate():
+        RunningWriterProcessCounter.__lock.acquire()
+        RunningWriterProcessCounter.__processCount.value += 1
+        RunningWriterProcessCounter.__lock.release()
         
+if __name__ == "__main__":
+    print(RunningWriterProcessCounter.getCount())
+    RunningWriterProcessCounter.run()
+    print(RunningWriterProcessCounter.getCount())

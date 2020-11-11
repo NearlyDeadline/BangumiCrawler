@@ -1,15 +1,14 @@
 '''
 Date: 2020-11-10 20:23:40
 LastEditors: Mike
-LastEditTime: 2020-11-11 18:43:04
+LastEditTime: 2020-11-11 20:41:16
 FilePath: \BangumiCrawler\writer.py
 '''
 
 from request_json import get_subject_json
 from multiprocessing import Process
-from bangumi_queue import RunningWriterProcessCounter
 import json
-from define import Bangumi, Character, Person
+from define import Bangumi
 
 class WriterProcess (Process):
     __beginID = 0 # int, 开始爬取的id，包括自己
@@ -28,8 +27,6 @@ class WriterProcess (Process):
     return {*}
     '''
     def run(self):
-        RunningWriterProcessCounter.run()
-
         for bangumiID in range(self.__beginID, self.__endID):
             subjectJsonDict = json.loads(get_subject_json(bangumiID))
             if isinstance(subjectJsonDict, dict) and subjectJsonDict.get("code", None) == None and Bangumi.shouldInclude(subjectJsonDict):
@@ -38,5 +35,3 @@ class WriterProcess (Process):
                 self.__bangumiQueue.put(Bangumi(subjectJsonDict))
             else: # 结果不是字典，或者有code一栏，视为无效数据
                 pass
-        
-        RunningWriterProcessCounter.terminate()
