@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-11 23:17:32
+LastEditTime: 2020-11-12 13:54:43
 FilePath: \BangumiCrawler\define.py
 '''  
 
@@ -71,82 +71,6 @@ class Collection:
 
 
 class Bangumi:
-    '''
-    description: 输入从api爬取到的全部数据，选择有用的信息进行存储，进行预备的反序列化
-    param {*} self
-    param {*} subjectJsonDict，已经被读取为dict形式的json
-    return {*}
-    '''
-    def __init__(self, subjectJsonDict):
-        self.bangumiID = subjectJsonDict["id"]
-        self.name = subjectJsonDict["name_cn"]
-        self.count = subjectJsonDict["eps_count"]
-        self.pubTime = subjectJsonDict["air_date"]
-        self.rank = subjectJsonDict["rank"]
-
-        # "rating"
-        self.ratingTotal = subjectJsonDict["rating"]["total"]
-        self.ratingScore = subjectJsonDict["rating"]["score"]
-        
-        # "rating"."count": 数组第i位表示评分为i+1的人数
-        for i in range(1, 11):
-            self.ratingScoreList[i - 1] = subjectJsonDict["rating"]["count"][str(i)]
-
-        # "collection"
-        self.collection.wish = subjectJsonDict["collection"]["wish"]
-        self.collection.collect = subjectJsonDict["collection"]["collect"]
-        self.collection.doing = subjectJsonDict["collection"]["doing"]
-        self.collection.onHold = subjectJsonDict["collection"]["on_hold"]
-        self.collection.dropped = subjectJsonDict["collection"]["dropped"]
-
-        # "crt"，只收录主角
-        for characterDict in filter(lambda characterDict: characterDict["role_name"] == "主角", subjectJsonDict["crt"]):
-            crt = Character()  # character简写，代表一个虚拟角色
-            crt.characterID = characterDict["id"]
-            crt.name = characterDict["name_cn"]
-            
-            if (characterDict["info"].get("gender", None)):
-                crt.gender = characterDict["info"]["gender"]
-            else:
-                crt.gender = "未知"
-
-            if (characterDict["info"].get("人设", None)):
-                crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
-            else:
-                crt.setting = Person(-1, "未知", PersonJob.人物设定)
-
-            crt.actors = []
-            for actorDict in characterDict["actors"]:
-                crt.actors.append(Person(actorDict["id"], actorDict["name"], PersonJob.配音))
-
-            self.characters.append(crt)
-            
-        # "staff"，只添加导演和脚本
-        for staffDict in subjectJsonDict["staff"]:
-            if "导演" in staffDict["jobs"]:
-                self.staff.append(Person(staffDict["id"], staffDict["name_cn"],PersonJob.导演))
-            if "脚本" in staffDict["jobs"]:
-                self.staff.append(Person(staffDict["id"], staffDict["name_cn"],PersonJob.脚本))
-
-    
-    '''
-    description: 根据评分人数和评分值综合判断该番剧是否值得收录
-    param {*} self
-    param {dict} subjectJson
-    return {Bool} result
-    '''
-    @staticmethod
-    def shouldInclude(subjectJsonDict):
-        if subjectJsonDict["type"] != 2: # 不是动画
-            return False
-        ratingCount = subjectJsonDict["rating"]["total"]
-        ratingScore = subjectJsonDict["rating"]["score"]
-        if ratingCount < 700 or ratingScore < 6.5:
-            # 评分人数少于700人或者评分值低于6.5视为不值得输入的数据
-            return False
-        return True
-
-    
     # int: "id"
     bangumiID = 0
 
@@ -173,13 +97,91 @@ class Bangumi:
     ratingScoreList = [0] * 10
 
     # 状态
-    collection = Collection()
+    collection = None
 
     # [Character]: 主角
     characters = []
 
     # [Person]: 主要制作人员
     staff = []
+
+    '''
+    description: 输入从api爬取到的全部数据，选择有用的信息进行存储，进行预备的反序列化
+    param {*} self
+    param {*} subjectJsonDict，已经被读取为dict形式的json
+    return {*}
+    '''
+    def __init__(self, subjectJsonDict):
+        self.bangumiID = subjectJsonDict["id"]
+        self.name = subjectJsonDict["name_cn"]
+        self.count = subjectJsonDict["eps_count"]
+        self.pubTime = subjectJsonDict["air_date"]
+        self.rank = subjectJsonDict["rank"]
+
+        # "rating"
+        self.ratingTotal = subjectJsonDict["rating"]["total"]
+        self.ratingScore = subjectJsonDict["rating"]["score"]
+        
+        # "rating"."count": 数组第i位表示评分为i+1的人数
+        for i in range(1, 11):
+            self.ratingScoreList[i - 1] = subjectJsonDict["rating"]["count"][str(i)]
+
+        # "collection"
+        self.collection = Collection()
+        self.collection.wish = subjectJsonDict["collection"]["wish"]
+        self.collection.collect = subjectJsonDict["collection"]["collect"]
+        self.collection.doing = subjectJsonDict["collection"]["doing"]
+        self.collection.onHold = subjectJsonDict["collection"]["on_hold"]
+        self.collection.dropped = subjectJsonDict["collection"]["dropped"]
+
+        # "crt"，只收录主角
+        self.characters = []
+        for characterDict in filter(lambda characterDict: characterDict["role_name"] == "主角", subjectJsonDict["crt"]):
+            crt = Character()  # character简写，代表一个虚拟角色
+            crt.characterID = characterDict["id"]
+            crt.name = characterDict["name_cn"]
+            
+            if (characterDict["info"].get("gender", None)):
+                crt.gender = characterDict["info"]["gender"]
+            else:
+                crt.gender = "未知"
+
+            if (characterDict["info"].get("人设", None)):
+                crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
+            else:
+                crt.setting = Person(-1, "未知", PersonJob.人物设定)
+
+            crt.actors = []
+            for actorDict in characterDict["actors"]:
+                crt.actors.append(Person(actorDict["id"], actorDict["name"], PersonJob.配音))
+
+            self.characters.append(crt)
+            
+        # "staff"，只添加导演和脚本
+        self.staff = []
+        for staffDict in subjectJsonDict["staff"]:
+            if "导演" in staffDict["jobs"]:
+                self.staff.append(Person(staffDict["id"], staffDict["name_cn"],PersonJob.导演))
+            if "脚本" in staffDict["jobs"]:
+                self.staff.append(Person(staffDict["id"], staffDict["name_cn"],PersonJob.脚本))
+
+    
+    '''
+    description: 根据评分人数和评分值综合判断该番剧是否值得收录
+    param {*} self
+    param {dict} subjectJson
+    return {Bool} result
+    '''
+    @staticmethod
+    def shouldInclude(subjectJsonDict):
+        if subjectJsonDict["type"] != 2: # 不是动画
+            return False
+        ratingCount = subjectJsonDict["rating"]["total"]
+        ratingScore = subjectJsonDict["rating"]["score"]
+        if ratingCount < 700 or ratingScore < 6.5:
+            # 评分人数少于700人或者评分值低于6.5视为不值得输入的数据
+            return False
+        return True
 
 if __name__ == "__main__":
     import json

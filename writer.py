@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:23:40
 LastEditors: Mike
-LastEditTime: 2020-11-11 20:41:16
+LastEditTime: 2020-11-12 13:52:35
 FilePath: \BangumiCrawler\writer.py
 '''
 
@@ -35,3 +35,13 @@ class WriterProcess (Process):
                 self.__bangumiQueue.put(Bangumi(subjectJsonDict))
             else: # 结果不是字典，或者有code一栏，视为无效数据
                 pass
+
+if __name__ == "__main__":
+    from multiprocessing import Queue
+    q = Queue()
+    p = WriterProcess(9717,9718, q)
+    p.start()
+    p.join()
+    i = q.get()
+    print(q.empty())
+    print(i.collection.wish)

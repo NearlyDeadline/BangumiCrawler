@@ -1,32 +1,57 @@
 '''
 Date: 2020-11-10 20:30:04
 LastEditors: Mike
-LastEditTime: 2020-11-12 10:24:05
+LastEditTime: 2020-11-12 14:03:17
 FilePath: \BangumiCrawler\reader.py
 '''
 
-from py2neo import Graph, Node, Relationship
+from py2neo import Graph, Node, Relationship, Schema
 from py2neo.matching import *
 from multiprocessing import Process, Queue
 
+class Neo4jConfig:
+    host = "127.0.0.1"
+    user = "neo4j"
+    password = "123456"
+    def __init__(self):
+        graph = Graph(host=Neo4jConfig.host, user=Neo4jConfig.user, password=Neo4jConfig.password)
+        graph.delete_all()
+        schema = Schema(graph)
 
-class ReaderProcess(Process):
+        schema.create_uniqueness_constraint("作品", "bid")
+        schema.create_index("作品", "name")
+
+        schema.create_uniqueness_constraint("角色", "cid")
+        schema.create_index("角色", "name")
+
+        schema.create_index("人物", "pid")
+        schema.create_uniqueness_constraint("人物", "name")
+
+
+class ReaderProcess:
     __bangumiQueue = None # multiprocessing.Queue，存入Bangumi对象的队列
     __writerProcessList = [] # [multiprocessing.Process]，所有写者进程的列表
 
     def __init__(self, bangumiQueue, writerProcessList):
-        Process.__init__(self)
         self.__bangumiQueue = bangumiQueue
         self.__writerProcessList = writerProcessList
-        
-    def run(self):
-        graph = Graph(password="123456")
 
-        # 队列不空、或者还有正在工作的写者进程时，读者进程应该继续工作
-        while not self.__bangumiQueue.empty() or filter(lambda p : p.is_alive(), self.__writerProcessList):
-            while self.__bangumiQueue.empty():
+    def start(self):
+        self.run()
+
+    def run(self):
+        graph = Graph(host=Neo4jConfig.host, user=Neo4jConfig.user, password=Neo4jConfig.password)
+
+        while True:
+            '''
+            while self.__bangumiQueue.empty() and filter(lambda p : p.is_alive(), self.__writerProcessList):
                 pass
-                # 队列已空，但还有工作中的写者进程，读者进程应该等待
+            # 队列已空，但还有工作中的写者进程，读者进程应该等待，直到队列不空退出循环或者写者进程全部结束
+            if self.__bangumiQueue.empty() and not filter(lambda p : p.is_alive(), self.__writerProcessList):
+                break
+            # 队列已空、并且没有正在工作的写者进程时，读者进程应该结束工作
+            '''
+
             bangumi = self.__bangumiQueue.get()
             nodematcher = NodeMatcher(graph)
             bangumiNode = nodematcher.match("作品", bid=str(bangumi.bangumiID)).first()
@@ -39,11 +64,11 @@ class ReaderProcess(Process):
                 bangumiNode["排名"] = bangumi.rank
                 bangumiNode["评分人数"] = bangumi.ratingTotal
                 bangumiNode["评分值"] = bangumi.ratingScore
-                bangumiNode["想看人数"] = bangumi.wish
-                bangumiNode["看过人数"] = bangumi.collect
-                bangumiNode["在看人数"] = bangumi.doing
-                bangumiNode["搁置人数"] = bangumi.onHold
-                bangumiNode["抛弃人数"] = bangumi.dropped
+                bangumiNode["想看人数"] = bangumi.collection.wish
+                bangumiNode["看过人数"] = bangumi.collection.collect
+                bangumiNode["在看人数"] = bangumi.collection.doing
+                bangumiNode["搁置人数"] = bangumi.collection.onHold
+                bangumiNode["抛弃人数"] = bangumi.collection.dropped
                 
                 graph.create(bangumiNode)
                 
@@ -54,7 +79,7 @@ class ReaderProcess(Process):
                         characterNode = Node("角色")
                         characterNode["cid"] = character.characterID
                         characterNode["name"] = character.name
-                        character["性别"] = character.gender
+                        characterNode["性别"] = str(character.gender)
 
                         graph.create(characterNode)
 
@@ -100,3 +125,16 @@ class ReaderProcess(Process):
 
                     relationship = Relationship(staffNode, "%s" % staffPerson.personJob.name, bangumiNode)
                     graph.create(relationship)
+
+if __name__ == "__main__":
+    from writer import WriterProcess
+    Neo4jConfig()
+    q = Queue()
+    wp = WriterProcess(9717,9718,q)
+    l = []
+    l.append(wp)
+    wp.start()
+    rp = ReaderProcess(q, l)
+    rp.start()
+    wp.join()
+    print("结束")
