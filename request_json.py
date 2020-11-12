@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 19:58:06
 LastEditors: Mike
-LastEditTime: 2020-11-11 16:58:08
+LastEditTime: 2020-11-12 16:17:49
 FilePath: \BangumiCrawler\request_json.py
 '''
 
@@ -9,6 +9,8 @@ import requests
 import encodings
 import random
 import unicodedata
+from bs4 import BeautifulSoup
+import lxml
 
 userAgents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36 Edg/86.0.622.63",
@@ -33,9 +35,31 @@ def get_subject_json(id):
     text = unicodedata.normalize('NFKD', text)
     return text
 
+'''
+description: 输入page页号，获取该页24个作品id，用于get_subject_json进一步获取详细信息
+param {int} page
+return {[int]} 该页全部id，24个 
+'''
+def get_subject_id(page):
+    subjectIDList = []
+    headers = {
+        'User-Agent': random.choice(userAgents)
+        }
+    url = 'https://bgm.tv/anime/browser/?sort=rank&page=' + str(page)
+    html = requests.get(url, headers=headers).text
+    soup = BeautifulSoup(html, 'lxml')
+    result = soup.findAll('a', class_="l")
+    strList = []
+    for i in result:
+        strList.append(i["href"])
+    strList = strList[3:27]
+    for s in strList:
+        s = s[9:]
+        subjectIDList.append(s)
+    
+    return subjectIDList
+
 if __name__ == "__main__":
-    import json
-    from define import Bangumi
-    test = get_subject_json(2)
-    subjectJsonDict = json.loads(test)
-    print (Bangumi.shouldInclude(subjectJsonDict))
+    test = get_subject_id(1)
+    for i in test:
+        print(i)

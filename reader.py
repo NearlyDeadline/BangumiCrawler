@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:30:04
 LastEditors: Mike
-LastEditTime: 2020-11-12 15:09:54
+LastEditTime: 2020-11-12 15:29:11
 FilePath: \BangumiCrawler\reader.py
 '''
 
@@ -44,7 +44,10 @@ class ReaderProcess(Process):
         graph = Graph(host=Neo4jConfig.host, user=Neo4jConfig.user, password=Neo4jConfig.password)
 
         while True:
-            bangumi = self.__bangumiQueue.get(timeout=60) # 默认超时时间设为60秒
+            try:
+                bangumi = self.__bangumiQueue.get(timeout=60) # 默认超时时间设为60秒
+            except:
+                break
             nodematcher = NodeMatcher(graph)
             bangumiNode = nodematcher.match("作品", bid=str(bangumi.bangumiID)).first()
             if not bangumiNode: # 保证作品不重复
