@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-12 13:54:43
+LastEditTime: 2020-11-12 15:10:21
 FilePath: \BangumiCrawler\define.py
 '''  
 
@@ -149,7 +149,7 @@ class Bangumi:
             if (characterDict["info"].get("人设", None)):
                 crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
             else:
-                crt.setting = Person(-1, "未知", PersonJob.人物设定)
+                crt.setting = None
 
             crt.actors = []
             for actorDict in characterDict["actors"]:
@@ -174,12 +174,16 @@ class Bangumi:
     '''
     @staticmethod
     def shouldInclude(subjectJsonDict):
-        if subjectJsonDict["type"] != 2: # 不是动画
+        if subjectJsonDict["type"] != 2: 
+            # 不是动画的不要
+            return False
+        if "OVA" in subjectJsonDict["name"] or "OAD" in subjectJsonDict["name"]:
+            # OVA或者OAD的不要
             return False
         ratingCount = subjectJsonDict["rating"]["total"]
         ratingScore = subjectJsonDict["rating"]["score"]
-        if ratingCount < 700 or ratingScore < 6.5:
-            # 评分人数少于700人或者评分值低于6.5视为不值得输入的数据
+        if ratingCount < 1000 or ratingScore < 6.5:
+            # 评分人数少于这些人或者评分值低于这些的的不要
             return False
         return True
 

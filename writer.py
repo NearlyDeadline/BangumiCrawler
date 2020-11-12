@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:23:40
 LastEditors: Mike
-LastEditTime: 2020-11-12 13:52:35
+LastEditTime: 2020-11-12 15:08:07
 FilePath: \BangumiCrawler\writer.py
 '''
 
@@ -28,13 +28,17 @@ class WriterProcess (Process):
     '''
     def run(self):
         for bangumiID in range(self.__beginID, self.__endID):
-            subjectJsonDict = json.loads(get_subject_json(bangumiID))
-            if isinstance(subjectJsonDict, dict) and subjectJsonDict.get("code", None) == None and Bangumi.shouldInclude(subjectJsonDict):
+            try:
+                subjectJsonDict = json.loads(get_subject_json(bangumiID))
+                if isinstance(subjectJsonDict, dict) and subjectJsonDict.get("code", None) == None and Bangumi.shouldInclude(subjectJsonDict):
                 # 如果读取到了一个字典，并且没有code一栏，视为有效数据
                 # 我也不知道为什么bgm.tv设置成只有错误才返回错误码
-                self.__bangumiQueue.put(Bangumi(subjectJsonDict))
-            else: # 结果不是字典，或者有code一栏，视为无效数据
-                pass
+                    self.__bangumiQueue.put(Bangumi(subjectJsonDict))
+                else: # 结果不是字典，或者有code一栏，视为无效数据
+                    pass
+            except BaseException:
+                log = open("JsonErrorLog.txt", "a", encoding="utf-8")
+                log.write("ID为" + str(bangumiID) + "的作品出现JSON读取异常")
 
 if __name__ == "__main__":
     from multiprocessing import Queue

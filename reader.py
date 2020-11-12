@@ -1,13 +1,13 @@
 '''
 Date: 2020-11-10 20:30:04
 LastEditors: Mike
-LastEditTime: 2020-11-12 14:03:17
+LastEditTime: 2020-11-12 15:09:54
 FilePath: \BangumiCrawler\reader.py
 '''
 
 from py2neo import Graph, Node, Relationship, Schema
-from py2neo.matching import *
-from multiprocessing import Process, Queue
+from py2neo.matching import NodeMatcher
+from multiprocessing import Process
 
 class Neo4jConfig:
     host = "127.0.0.1"
@@ -18,23 +18,24 @@ class Neo4jConfig:
         graph.delete_all()
         schema = Schema(graph)
 
-        schema.create_uniqueness_constraint("作品", "bid")
-        schema.create_index("作品", "name")
+        try:
+            schema.create_uniqueness_constraint("作品", "bid")
+            schema.create_index("作品", "name")
 
-        schema.create_uniqueness_constraint("角色", "cid")
-        schema.create_index("角色", "name")
+            schema.create_uniqueness_constraint("角色", "cid")
+            schema.create_index("角色", "name")
 
-        schema.create_index("人物", "pid")
-        schema.create_uniqueness_constraint("人物", "name")
+            schema.create_index("人物", "pid")
+            schema.create_uniqueness_constraint("人物", "name")
+        except:
+            pass
 
 
-class ReaderProcess:
+class ReaderProcess(Process):
     __bangumiQueue = None # multiprocessing.Queue，存入Bangumi对象的队列
-    __writerProcessList = [] # [multiprocessing.Process]，所有写者进程的列表
 
-    def __init__(self, bangumiQueue, writerProcessList):
+    def __init__(self, bangumiQueue):
         self.__bangumiQueue = bangumiQueue
-        self.__writerProcessList = writerProcessList
 
     def start(self):
         self.run()
@@ -43,16 +44,7 @@ class ReaderProcess:
         graph = Graph(host=Neo4jConfig.host, user=Neo4jConfig.user, password=Neo4jConfig.password)
 
         while True:
-            '''
-            while self.__bangumiQueue.empty() and filter(lambda p : p.is_alive(), self.__writerProcessList):
-                pass
-            # 队列已空，但还有工作中的写者进程，读者进程应该等待，直到队列不空退出循环或者写者进程全部结束
-            if self.__bangumiQueue.empty() and not filter(lambda p : p.is_alive(), self.__writerProcessList):
-                break
-            # 队列已空、并且没有正在工作的写者进程时，读者进程应该结束工作
-            '''
-
-            bangumi = self.__bangumiQueue.get()
+            bangumi = self.__bangumiQueue.get(timeout=60) # 默认超时时间设为60秒
             nodematcher = NodeMatcher(graph)
             bangumiNode = nodematcher.match("作品", bid=str(bangumi.bangumiID)).first()
             if not bangumiNode: # 保证作品不重复
@@ -87,21 +79,22 @@ class ReaderProcess:
                     relationship = Relationship(characterNode, "出演", bangumiNode)
                     graph.create(relationship)
 
-                    # 创建角色与人设的关系，注意人设的人物id为-1，需要用名字查找
-                    settingNode = nodematcher.match("人物", name=character.setting.name).first()
-                    if not settingNode:
-                        settingNode = Node("人物")
-                        settingNode["pid"] = character.setting.personID
-                        settingNode["name"] = character.setting.name
+                    # 创建角色与人设的关系，注意不是每个角色都有人设
+                    if character.setting:
+                        settingNode = nodematcher.match("人物", name=character.setting.name).first()
+                        if not settingNode:
+                            settingNode = Node("人物")
+                            settingNode["pid"] = character.setting.personID
+                            settingNode["name"] = character.setting.name
 
-                        graph.create(settingNode)
-                    
-                    relationship = Relationship(settingNode, "设定", characterNode)
-                    graph.create(relationship)
+                            graph.create(settingNode)
+                        
+                        relationship = Relationship(settingNode, "设定", characterNode)
+                        graph.create(relationship)
 
                     # 遍历该角色的所有配音，去创建人物结点、配音与角色的关系
                     for actor in character.actors:
-                        personNode = nodematcher.match("人物", pid=str(actor.personID)).first()
+                        personNode = nodematcher.match("人物", name=actor.name).first()
                         if not personNode: # 未找到，创建人物结点
                             personNode = Node("人物")
                             personNode["pid"] = actor.personID
@@ -115,7 +108,7 @@ class ReaderProcess:
 
                 # 遍历该作品的所有制作人员，去创建人物结点、人物与作品的关系
                 for staffPerson in bangumi.staff:
-                    staffNode = nodematcher.match("人物", pid=str(staffPerson.personID))
+                    staffNode = nodematcher.match("人物", name=staffPerson.name)
                     if not staffNode:
                         staffNode = Node("人物")
                         staffNode["pid"] = staffPerson.personID
@@ -128,6 +121,7 @@ class ReaderProcess:
 
 if __name__ == "__main__":
     from writer import WriterProcess
+    from multiprocessing import Queue
     Neo4jConfig()
     q = Queue()
     wp = WriterProcess(9717,9718,q)
