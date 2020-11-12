@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:30:04
 LastEditors: Mike
-LastEditTime: 2020-11-11 23:34:07
+LastEditTime: 2020-11-12 10:24:05
 FilePath: \BangumiCrawler\reader.py
 '''
 
@@ -11,15 +11,22 @@ from multiprocessing import Process, Queue
 
 
 class ReaderProcess(Process):
-    __bangumiQueue = Queue()
+    __bangumiQueue = None # multiprocessing.Queue，存入Bangumi对象的队列
+    __writerProcessList = [] # [multiprocessing.Process]，所有写者进程的列表
 
-    def __init__(self, bangumiQueue):
+    def __init__(self, bangumiQueue, writerProcessList):
+        Process.__init__(self)
         self.__bangumiQueue = bangumiQueue
+        self.__writerProcessList = writerProcessList
         
     def run(self):
         graph = Graph(password="123456")
 
-        while True:
+        # 队列不空、或者还有正在工作的写者进程时，读者进程应该继续工作
+        while not self.__bangumiQueue.empty() or filter(lambda p : p.is_alive(), self.__writerProcessList):
+            while self.__bangumiQueue.empty():
+                pass
+                # 队列已空，但还有工作中的写者进程，读者进程应该等待
             bangumi = self.__bangumiQueue.get()
             nodematcher = NodeMatcher(graph)
             bangumiNode = nodematcher.match("作品", bid=str(bangumi.bangumiID)).first()
@@ -40,58 +47,56 @@ class ReaderProcess(Process):
                 
                 graph.create(bangumiNode)
                 
-            # 遍历该作品的所有角色，去创建角色结点、作品与角色的关系
-            for character in bangumi.characters:
-                characterNode = nodematcher.match("角色", cid=str(character.characterID)).first()
-                if not characterNode: # 未找到，创建角色结点
-                    characterNode = Node("角色")
-                    characterNode["cid"] = character.characterID
-                    characterNode["name"] = character.name
-                    character["性别"] = character.gender
+                # 遍历该作品的所有角色，去创建角色结点、作品与角色的关系
+                for character in bangumi.characters:
+                    characterNode = nodematcher.match("角色", cid=str(character.characterID)).first()
+                    if not characterNode: # 未找到，创建角色结点
+                        characterNode = Node("角色")
+                        characterNode["cid"] = character.characterID
+                        characterNode["name"] = character.name
+                        character["性别"] = character.gender
 
-                    graph.create(characterNode)
+                        graph.create(characterNode)
 
-                # 创建作品与角色的关系
-                relationship = Relationship(characterNode, "出演", bangumiNode)
-                graph.create(relationship)
-
-                # 创建角色与人设的关系，注意人设的人物id为-1，需要用名字查找
-                settingNode = nodematcher.match("人物", name=character.setting.name).first()
-                if not settingNode:
-                    settingNode = Node("人物")
-                    settingNode["pid"] = character.setting.personID
-                    settingNode["name"] = character.setting.name
-
-                    graph.create(settingNode)
-                
-                relationship = Relationship(settingNode, "设定", characterNode)
-                graph.create(relationship)
-
-                # 遍历该角色的所有配音，去创建人物结点、配音与角色的关系
-                for actor in character.actors:
-                    personNode = nodematcher.match("人物", pid=str(actor.personID)).first()
-                    if not personNode: # 未找到，创建人物结点
-                        personNode = Node("人物")
-                        personNode["pid"] = actor.personID
-                        personNode["name"] = actor.name
-
-                        graph.create(personNode)
-
-                    # 创建配音与角色的关系        
-                    relationship = Relationship(personNode, "配音", characterNode)
+                    # 创建作品与角色的关系
+                    relationship = Relationship(characterNode, "出演", bangumiNode)
                     graph.create(relationship)
 
-            # 遍历该作品的所有制作人员，去创建人物结点、人物与作品的关系
-            for staffPerson in bangumi.staff:
-                staffNode = nodematcher.match("人物", pid=str(staffPerson.personID))
-                if not staffNode:
-                    staffNode = Node("人物")
-                    staffNode["pid"] = staffPerson.personID
-                    staffNode["name"] = staffPerson.name
+                    # 创建角色与人设的关系，注意人设的人物id为-1，需要用名字查找
+                    settingNode = nodematcher.match("人物", name=character.setting.name).first()
+                    if not settingNode:
+                        settingNode = Node("人物")
+                        settingNode["pid"] = character.setting.personID
+                        settingNode["name"] = character.setting.name
 
-                    graph.create(staffNode)
+                        graph.create(settingNode)
+                    
+                    relationship = Relationship(settingNode, "设定", characterNode)
+                    graph.create(relationship)
 
-                relationship = Relationship(staffNode, "%s" % staffPerson.personJob.name, bangumiNode)
-                graph.create(relationship)
+                    # 遍历该角色的所有配音，去创建人物结点、配音与角色的关系
+                    for actor in character.actors:
+                        personNode = nodematcher.match("人物", pid=str(actor.personID)).first()
+                        if not personNode: # 未找到，创建人物结点
+                            personNode = Node("人物")
+                            personNode["pid"] = actor.personID
+                            personNode["name"] = actor.name
 
-                
+                            graph.create(personNode)
+
+                        # 创建配音与角色的关系        
+                        relationship = Relationship(personNode, "配音", characterNode)
+                        graph.create(relationship)
+
+                # 遍历该作品的所有制作人员，去创建人物结点、人物与作品的关系
+                for staffPerson in bangumi.staff:
+                    staffNode = nodematcher.match("人物", pid=str(staffPerson.personID))
+                    if not staffNode:
+                        staffNode = Node("人物")
+                        staffNode["pid"] = staffPerson.personID
+                        staffNode["name"] = staffPerson.name
+
+                        graph.create(staffNode)
+
+                    relationship = Relationship(staffNode, "%s" % staffPerson.personJob.name, bangumiNode)
+                    graph.create(relationship)
