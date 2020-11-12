@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 09:54:57
 LastEditors: Mike
-LastEditTime: 2020-11-12 19:38:04
+LastEditTime: 2020-11-12 19:52:10
 FilePath: \BangumiCrawler\main.py
 '''
 
@@ -11,7 +11,7 @@ from reader import ReaderProcess, Neo4jConfig
 
 if __name__ == "__main__":
     writerCount = 4 # 写者爬虫进程数量
-    pageRange = 1 # 每个进程负责爬多少页
+    pageRange = 25 # 每个进程负责爬多少页
     pageShift = 1 # 每个进程的固定偏移
 
     Neo4jConfig()

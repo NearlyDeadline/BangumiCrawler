@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-12 18:59:29
+LastEditTime: 2020-11-12 19:52:41
 FilePath: \BangumiCrawler\define.py
 '''  
 
@@ -189,10 +189,8 @@ class Bangumi:
         if "OVA" in subjectJsonDict["name"] or "OAD" in subjectJsonDict["name"]:
             # OVA或者OAD的不要
             return False
-        ratingCount = subjectJsonDict["rating"]["total"]
-        ratingScore = subjectJsonDict["rating"]["score"]
-        if ratingCount < 1000 or ratingScore < 6.5:
-            # 评分人数少于这些人或者评分值低于这些的的不要
+        if subjectJsonDict["rating"]["total"] < 1000:
+            # 评分人数少于这些人的不要
             return False
         return True
 
