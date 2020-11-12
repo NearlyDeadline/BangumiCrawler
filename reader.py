@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:30:04
 LastEditors: Mike
-LastEditTime: 2020-11-12 15:29:11
+LastEditTime: 2020-11-12 19:37:50
 FilePath: \BangumiCrawler\reader.py
 '''
 
@@ -20,12 +20,9 @@ class Neo4jConfig:
 
         try:
             schema.create_uniqueness_constraint("作品", "bid")
-            schema.create_index("作品", "name")
 
             schema.create_uniqueness_constraint("角色", "cid")
-            schema.create_index("角色", "name")
 
-            schema.create_index("人物", "pid")
             schema.create_uniqueness_constraint("人物", "name")
         except:
             pass
@@ -35,21 +32,19 @@ class ReaderProcess(Process):
     __bangumiQueue = None # multiprocessing.Queue，存入Bangumi对象的队列
 
     def __init__(self, bangumiQueue):
+        Process.__init__(self)
         self.__bangumiQueue = bangumiQueue
-
-    def start(self):
-        self.run()
 
     def run(self):
         graph = Graph(host=Neo4jConfig.host, user=Neo4jConfig.user, password=Neo4jConfig.password)
 
         while True:
             try:
-                bangumi = self.__bangumiQueue.get(timeout=60) # 默认超时时间设为60秒
+                bangumi = self.__bangumiQueue.get(timeout=10) # 默认超时时间设为10秒
             except:
                 break
             nodematcher = NodeMatcher(graph)
-            bangumiNode = nodematcher.match("作品", bid=str(bangumi.bangumiID)).first()
+            bangumiNode = nodematcher.match("作品", bid=bangumi.bangumiID).first()
             if not bangumiNode: # 保证作品不重复
                 bangumiNode = Node("作品")
                 bangumiNode["bid"] = bangumi.bangumiID
@@ -69,7 +64,7 @@ class ReaderProcess(Process):
                 
                 # 遍历该作品的所有角色，去创建角色结点、作品与角色的关系
                 for character in bangumi.characters:
-                    characterNode = nodematcher.match("角色", cid=str(character.characterID)).first()
+                    characterNode = nodematcher.match("角色", cid=character.characterID).first()
                     if not characterNode: # 未找到，创建角色结点
                         characterNode = Node("角色")
                         characterNode["cid"] = character.characterID
@@ -111,27 +106,12 @@ class ReaderProcess(Process):
 
                 # 遍历该作品的所有制作人员，去创建人物结点、人物与作品的关系
                 for staffPerson in bangumi.staff:
-                    staffNode = nodematcher.match("人物", name=staffPerson.name)
+                    staffNode = nodematcher.match("人物", name=staffPerson.name).first()
                     if not staffNode:
                         staffNode = Node("人物")
                         staffNode["pid"] = staffPerson.personID
                         staffNode["name"] = staffPerson.name
-
                         graph.create(staffNode)
 
                     relationship = Relationship(staffNode, "%s" % staffPerson.personJob.name, bangumiNode)
                     graph.create(relationship)
-
-if __name__ == "__main__":
-    from writer import WriterProcess
-    from multiprocessing import Queue
-    Neo4jConfig()
-    q = Queue()
-    wp = WriterProcess(9717,9718,q)
-    l = []
-    l.append(wp)
-    wp.start()
-    rp = ReaderProcess(q, l)
-    rp.start()
-    wp.join()
-    print("结束")

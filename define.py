@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-12 15:10:21
+LastEditTime: 2020-11-12 18:59:29
 FilePath: \BangumiCrawler\define.py
 '''  
 
@@ -107,13 +107,16 @@ class Bangumi:
 
     '''
     description: 输入从api爬取到的全部数据，选择有用的信息进行存储，进行预备的反序列化
-    param {*} self
     param {*} subjectJsonDict，已经被读取为dict形式的json
     return {*}
     '''
     def __init__(self, subjectJsonDict):
         self.bangumiID = subjectJsonDict["id"]
-        self.name = subjectJsonDict["name_cn"]
+        
+        if subjectJsonDict["name_cn"] == "":
+            self.name = subjectJsonDict["name"]
+        else:
+            self.name = subjectJsonDict["name_cn"]
         self.count = subjectJsonDict["eps_count"]
         self.pubTime = subjectJsonDict["air_date"]
         self.rank = subjectJsonDict["rank"]
@@ -139,7 +142,10 @@ class Bangumi:
         for characterDict in filter(lambda characterDict: characterDict["role_name"] == "主角", subjectJsonDict["crt"]):
             crt = Character()  # character简写，代表一个虚拟角色
             crt.characterID = characterDict["id"]
-            crt.name = characterDict["name_cn"]
+            if characterDict["name_cn"] == "":
+                crt.name = characterDict["name"]
+            else:
+                crt.name = characterDict["name_cn"]
             
             if (characterDict["info"].get("gender", None)):
                 crt.gender = characterDict["info"]["gender"]
@@ -160,15 +166,18 @@ class Bangumi:
         # "staff"，只添加导演和脚本
         self.staff = []
         for staffDict in subjectJsonDict["staff"]:
+            if staffDict["name_cn"] == "":
+                staffName = staffDict["name"]
+            else:
+                staffName = staffDict["name_cn"]
             if "导演" in staffDict["jobs"]:
-                self.staff.append(Person(staffDict["id"], staffDict["name_cn"],PersonJob.导演))
+                self.staff.append(Person(staffDict["id"], staffName,PersonJob.导演))
             if "脚本" in staffDict["jobs"]:
-                self.staff.append(Person(staffDict["id"], staffDict["name_cn"],PersonJob.脚本))
+                self.staff.append(Person(staffDict["id"], staffName,PersonJob.脚本))
 
     
     '''
     description: 根据评分人数和评分值综合判断该番剧是否值得收录
-    param {*} self
     param {dict} subjectJson
     return {Bool} result
     '''

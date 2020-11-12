@@ -1,51 +1,48 @@
 '''
 Date: 2020-11-10 20:23:40
 LastEditors: Mike
-LastEditTime: 2020-11-12 15:08:07
+LastEditTime: 2020-11-12 19:27:37
 FilePath: \BangumiCrawler\writer.py
 '''
 
-from request_json import get_subject_json
+from request_json import get_subject_json, get_subject_id
 from multiprocessing import Process
 import json
 from define import Bangumi
 
 class WriterProcess (Process):
-    __beginID = 0 # int, 开始爬取的id，包括自己
-    __endID = 0 # int, 结束爬取的id，不包括自己
+    __beginPage = 0 # int, 开始爬取的页码，包括自己
+    __endPage = 0 # int, 结束爬取的页码，不包括自己
     __bangumiQueue = None # 存入Bangumi对象的队列
 
-    def __init__(self, beginID, endID, bangumiQueue):
+    '''
+    description: 写者进程
+    param {int} beginPage，开始爬取的页码，包括该页
+    param {int} endPage，结束爬取的页码，不包括该页
+    param {Queue} bangumiQueue，存放爬取结果的队列
+    '''
+    def __init__(self, beginPage, endPage, bangumiQueue):
         Process.__init__(self)
-        self.__beginID = beginID
-        self.__endID = endID
+        self.__beginPage = beginPage
+        self.__endPage = endPage
         self.__bangumiQueue = bangumiQueue
 
     '''
     description: 写者爬虫进程主函数。根据ID范围从API网站获取JSON，将其简化后放入队列供读者调用
-    param {*} self
-    return {*}
     '''
     def run(self):
-        for bangumiID in range(self.__beginID, self.__endID):
-            try:
-                subjectJsonDict = json.loads(get_subject_json(bangumiID))
-                if isinstance(subjectJsonDict, dict) and subjectJsonDict.get("code", None) == None and Bangumi.shouldInclude(subjectJsonDict):
-                # 如果读取到了一个字典，并且没有code一栏，视为有效数据
-                # 我也不知道为什么bgm.tv设置成只有错误才返回错误码
-                    self.__bangumiQueue.put(Bangumi(subjectJsonDict))
-                else: # 结果不是字典，或者有code一栏，视为无效数据
-                    pass
-            except BaseException:
-                log = open("JsonErrorLog.txt", "a", encoding="utf-8")
-                log.write("ID为" + str(bangumiID) + "的作品出现JSON读取异常")
+        for page in range(self.__beginPage, self.__endPage):
+            bangumiIDList = get_subject_id(page)
+            for bangumiID in bangumiIDList:
+                try:
+                    subjectJsonDict = json.loads(get_subject_json(bangumiID))
+                    if isinstance(subjectJsonDict, dict) and subjectJsonDict.get("code", None) == None and Bangumi.shouldInclude(subjectJsonDict):
+                    # 如果读取到了一个字典，并且没有code一栏，视为有效数据
+                    # 我也不知道为什么bgm.tv设置成只有错误才返回错误码
+                        self.__bangumiQueue.put(Bangumi(subjectJsonDict))
+                    else: # 结果不是字典，或者有code一栏，视为无效数据
+                        pass
+                except BaseException:
+                    log = open("JsonErrorLog.txt", "a", encoding="utf-8")
+                    log.write("ID为" + str(bangumiID) + "的作品出现JSON读取异常\n")
 
-if __name__ == "__main__":
-    from multiprocessing import Queue
-    q = Queue()
-    p = WriterProcess(9717,9718, q)
-    p.start()
-    p.join()
-    i = q.get()
-    print(q.empty())
-    print(i.collection.wish)

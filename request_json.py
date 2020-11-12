@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 19:58:06
 LastEditors: Mike
-LastEditTime: 2020-11-12 16:17:49
+LastEditTime: 2020-11-12 17:57:50
 FilePath: \BangumiCrawler\request_json.py
 '''
 
@@ -31,7 +31,7 @@ def get_subject_json(id):
         'User-Agent': random.choice(userAgents)
         }
     url = 'https://api.bgm.tv/subject/' + str(id) + '?responseGroup=medium'
-    text = requests.get(url, headers=headers).text.encode().decode("unicode_escape").replace("\\/", "/").replace("\r\n", "\\r\\n") 
+    text = requests.get(url, headers=headers).text.replace("\\/", "/").replace('\\r\\n', '').encode().decode("unicode_escape")
     text = unicodedata.normalize('NFKD', text)
     return text
 
@@ -60,6 +60,5 @@ def get_subject_id(page):
     return subjectIDList
 
 if __name__ == "__main__":
-    test = get_subject_id(1)
-    for i in test:
-        print(i)
+    import json
+    d = json.loads((get_subject_json(326)))
