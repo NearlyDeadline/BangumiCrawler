@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-13 10:15:48
+LastEditTime: 2020-11-13 15:40:21
 FilePath: \BangumiCrawler\define.py
 '''  
 
@@ -16,10 +16,9 @@ class Person: # 三次元人物，包括：导演/脚本/配音/人设等
 
     '''
     description: 初始化
-    param {int} personID
-    param {str} name
-    param {PersonJob} personJob
-    return {*}
+    param {int} personID: 人设为-1，其余可在Json中查到
+    param {str} name: 一般为"name_cn"，该项为空时用"name"替代
+    param {PersonJob} personJob: 见PersonJob枚举
     '''
     def __init__(self, personID, name, personJob):
         self.personID = personID
@@ -103,17 +102,16 @@ class Bangumi:
     staff = []
 
     '''
-    description: 输入从api爬取到的全部数据，选择有用的信息进行存储，进行预备的反序列化
+    description: 输入从api爬取到的全部数据，选择有用的信息进行存储，进行初步的反序列化
     param {*} subjectJsonDict，已经被读取为dict形式的json
-    return {*}
     '''
     def __init__(self, subjectJsonDict):
         self.bangumiID = subjectJsonDict["id"]
         
-        if subjectJsonDict["name_cn"] == "":
-            self.name = subjectJsonDict["name"]
-        else:
+        if subjectJsonDict["name_cn"]:
             self.name = subjectJsonDict["name_cn"]
+        else:
+            self.name = subjectJsonDict["name"]
 
         self.pubTime = subjectJsonDict["air_date"]
         self.rank = subjectJsonDict["rank"]
@@ -130,6 +128,7 @@ class Bangumi:
         self.collection = Collection()
         self.collection.wish = subjectJsonDict["collection"]["wish"]
         self.collection.collect = subjectJsonDict["collection"]["collect"]
+        # ID=35814，粗心网站程序员忘了加doing这一项，需要手动爬一下这个，自己设一下doing的值
         self.collection.doing = subjectJsonDict["collection"]["doing"]
         self.collection.onHold = subjectJsonDict["collection"]["on_hold"]
         self.collection.dropped = subjectJsonDict["collection"]["dropped"]
@@ -140,20 +139,21 @@ class Bangumi:
             for characterDict in filter(lambda characterDict: characterDict["role_name"] == "主角", subjectJsonDict["crt"]):
                 crt = Character()  # character简写，代表一个虚拟角色
                 crt.characterID = characterDict["id"]
-                if characterDict["name_cn"] == "":
-                    crt.name = characterDict["name"]
-                else:
+                if characterDict["name_cn"]:
                     crt.name = characterDict["name_cn"]
+                else:
+                    crt.name = characterDict["name"]
                 
-                if (characterDict["info"].get("gender", None)):
-                    crt.gender = characterDict["info"]["gender"]
-                else:
-                    crt.gender = "未知"
+                if (characterDict["info"]):
+                    if (characterDict["info"].get("gender", None)):
+                        crt.gender = characterDict["info"]["gender"]
+                    else:
+                        crt.gender = "未知"
 
-                if (characterDict["info"].get("人设", None)):
-                    crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
-                else:
-                    crt.setting = None
+                    if (characterDict["info"].get("人设", None)):
+                        crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
+                    else:
+                        crt.setting = None
 
                 crt.actors = []
                 if characterDict["actors"]:
@@ -164,10 +164,10 @@ class Bangumi:
         # "staff"，只添加导演和脚本
         self.staff = []
         for staffDict in subjectJsonDict["staff"]:
-            if staffDict["name_cn"] == "":
-                staffName = staffDict["name"]
-            else:
+            if staffDict["name_cn"]:
                 staffName = staffDict["name_cn"]
+            else:
+                staffName = staffDict["name"]
             if "导演" in staffDict["jobs"]:
                 self.staff.append(Person(staffDict["id"], staffName,PersonJob.导演))
             if "脚本" in staffDict["jobs"]:

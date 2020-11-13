@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:23:40
 LastEditors: Mike
-LastEditTime: 2020-11-13 11:55:21
+LastEditTime: 2020-11-13 15:26:01
 FilePath: \BangumiCrawler\writer.py
 '''
 
@@ -35,15 +35,17 @@ class WriterProcess (Process):
             bangumiIDList = get_subject_id(page)
             for bangumiID in bangumiIDList:
                 try:
-                    subjectJsonDict = json.loads(get_subject_json(bangumiID))
+                    subjectJsonDict = json.loads(get_subject_json(bangumiID), strict=False)
                     if isinstance(subjectJsonDict, dict) and subjectJsonDict.get("code", None) == None and Bangumi.shouldInclude(subjectJsonDict):
                     # 如果读取到了一个字典，并且没有code一栏，视为有效数据
                     # 我也不知道为什么bgm.tv设置成只有错误才返回错误码
+                    # strict=False: ID=62285, 16805时出现奇怪的字符
                         try:
                             self.__bangumiQueue.put(Bangumi(subjectJsonDict))
                         except Exception as e:
-                            print(e)
-                            print(str(bangumiID)+"\n")
+                            log = open("JsonErrorLog.txt", "a", encoding="utf-8")
+                            log.write("ID为" + str(bangumiID) + "的作品出现异常：" + str(e) + "\n")
+                            log.close()
                 except Exception as e:
                     log = open("JsonErrorLog.txt", "a", encoding="utf-8")
                     log.write("ID为" + str(bangumiID) + "的作品出现异常：" + str(e) + "\n")

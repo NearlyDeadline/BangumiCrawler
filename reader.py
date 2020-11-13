@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:30:04
 LastEditors: Mike
-LastEditTime: 2020-11-12 19:37:50
+LastEditTime: 2020-11-13 15:34:51
 FilePath: \BangumiCrawler\reader.py
 '''
 
@@ -9,6 +9,9 @@ from py2neo import Graph, Node, Relationship, Schema
 from py2neo.matching import NodeMatcher
 from multiprocessing import Process
 
+'''
+description: Neo4j初始化连接，主程序直接Neo4jConfig()调用构造函数即可
+'''
 class Neo4jConfig:
     host = "127.0.0.1"
     user = "neo4j"
@@ -29,8 +32,12 @@ class Neo4jConfig:
 
 
 class ReaderProcess(Process):
-    __bangumiQueue = None # multiprocessing.Queue，存入Bangumi对象的队列
+    __bangumiQueue = None 
 
+    '''
+    description: 读者进程
+    param {*} bangumiQueue: multiprocessing.Queue，存入Bangumi对象的队列
+    '''
     def __init__(self, bangumiQueue):
         Process.__init__(self)
         self.__bangumiQueue = bangumiQueue
@@ -42,7 +49,7 @@ class ReaderProcess(Process):
             try:
                 bangumi = self.__bangumiQueue.get(timeout=10) # 默认超时时间设为10秒
             except:
-                break
+                break # 从这退出循环
             nodematcher = NodeMatcher(graph)
             bangumiNode = nodematcher.match("作品", bid=bangumi.bangumiID).first()
             if not bangumiNode: # 保证作品不重复
