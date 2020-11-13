@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-12 19:52:41
+LastEditTime: 2020-11-13 10:15:48
 FilePath: \BangumiCrawler\define.py
 '''  
 
@@ -49,7 +49,7 @@ class Character: # 二次元虚拟角色
     # [Person]: 配音"crt"."actors"
     actors = []
 
-    # Person: 人设"crt"."info"."人设"，不是每个角色都有这一项，没有时值为"未知"
+    # Person: 人设"crt"."info"."人设"，不是每个角色都有这一项，没有时值为None
     setting = None
 
     
@@ -76,9 +76,6 @@ class Bangumi:
 
     # str: 中文名字，"name_cn"
     name = ""
-
-    # int: 集数，"eps_count"
-    count = 0
 
     # str: 播出日期，"air_date"
     pubTime = ""
@@ -117,7 +114,7 @@ class Bangumi:
             self.name = subjectJsonDict["name"]
         else:
             self.name = subjectJsonDict["name_cn"]
-        self.count = subjectJsonDict["eps_count"]
+
         self.pubTime = subjectJsonDict["air_date"]
         self.rank = subjectJsonDict["rank"]
 
@@ -139,30 +136,31 @@ class Bangumi:
 
         # "crt"，只收录主角
         self.characters = []
-        for characterDict in filter(lambda characterDict: characterDict["role_name"] == "主角", subjectJsonDict["crt"]):
-            crt = Character()  # character简写，代表一个虚拟角色
-            crt.characterID = characterDict["id"]
-            if characterDict["name_cn"] == "":
-                crt.name = characterDict["name"]
-            else:
-                crt.name = characterDict["name_cn"]
-            
-            if (characterDict["info"].get("gender", None)):
-                crt.gender = characterDict["info"]["gender"]
-            else:
-                crt.gender = "未知"
+        if subjectJsonDict["crt"]:
+            for characterDict in filter(lambda characterDict: characterDict["role_name"] == "主角", subjectJsonDict["crt"]):
+                crt = Character()  # character简写，代表一个虚拟角色
+                crt.characterID = characterDict["id"]
+                if characterDict["name_cn"] == "":
+                    crt.name = characterDict["name"]
+                else:
+                    crt.name = characterDict["name_cn"]
+                
+                if (characterDict["info"].get("gender", None)):
+                    crt.gender = characterDict["info"]["gender"]
+                else:
+                    crt.gender = "未知"
 
-            if (characterDict["info"].get("人设", None)):
-                crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
-            else:
-                crt.setting = None
+                if (characterDict["info"].get("人设", None)):
+                    crt.setting = Person(-1, characterDict["info"]["人设"], PersonJob.人物设定)
+                else:
+                    crt.setting = None
 
-            crt.actors = []
-            for actorDict in characterDict["actors"]:
-                crt.actors.append(Person(actorDict["id"], actorDict["name"], PersonJob.配音))
-
-            self.characters.append(crt)
-            
+                crt.actors = []
+                if characterDict["actors"]:
+                    for actorDict in characterDict["actors"]:
+                        crt.actors.append(Person(actorDict["id"], actorDict["name"], PersonJob.配音))
+        
+                self.characters.append(crt) 
         # "staff"，只添加导演和脚本
         self.staff = []
         for staffDict in subjectJsonDict["staff"]:

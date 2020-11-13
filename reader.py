@@ -49,7 +49,6 @@ class ReaderProcess(Process):
                 bangumiNode = Node("作品")
                 bangumiNode["bid"] = bangumi.bangumiID
                 bangumiNode["name"] = bangumi.name
-                bangumiNode["集数"] = bangumi.count
                 bangumiNode["放送开始"] = bangumi.pubTime
                 bangumiNode["排名"] = bangumi.rank
                 bangumiNode["评分人数"] = bangumi.ratingTotal

@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 19:58:06
 LastEditors: Mike
-LastEditTime: 2020-11-12 17:57:50
+LastEditTime: 2020-11-13 11:56:02
 FilePath: \BangumiCrawler\request_json.py
 '''
 
@@ -11,6 +11,7 @@ import random
 import unicodedata
 from bs4 import BeautifulSoup
 import lxml
+import json
 
 userAgents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36 Edg/86.0.622.63",
@@ -24,7 +25,7 @@ userAgents = [
 '''
 description: 根据番剧id，访问api网站获取番剧详细信息，将其编码为可直接显示的json
 param {int} id: 番剧id
-return {string} 包含如下处理：①将"\/"替换为"/" ②从unicode解码
+return {string} 包含如下处理：①将"\/"替换为"/" ②从unicode解码 ③去除双引号等干扰JSON的符号
 '''
 def get_subject_json(id):
     headers = {
@@ -32,8 +33,9 @@ def get_subject_json(id):
         }
     url = 'https://api.bgm.tv/subject/' + str(id) + '?responseGroup=medium'
     text = requests.get(url, headers=headers).text.replace("\\/", "/").replace('\\r\\n', '').encode().decode("unicode_escape")
+    text = json.dumps(text)
     text = unicodedata.normalize('NFKD', text)
-    return text
+    return json.loads(text)
 
 '''
 description: 输入page页号，获取该页24个作品id，用于get_subject_json进一步获取详细信息
@@ -60,5 +62,5 @@ def get_subject_id(page):
     return subjectIDList
 
 if __name__ == "__main__":
-    import json
-    d = json.loads((get_subject_json(326)))
+    print(type(json.loads(get_subject_json(253))))
+    
