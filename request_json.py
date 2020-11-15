@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 19:58:06
 LastEditors: Mike
-LastEditTime: 2020-11-13 15:32:15
+LastEditTime: 2020-11-15 14:37:21
 FilePath: \BangumiCrawler\request_json.py
 '''
 
@@ -63,7 +63,7 @@ def get_subject_id(page):
     url = 'https://bgm.tv/anime/browser/?sort=rank&page=' + str(page)
     html = requests.get(url, headers=headers).text
     soup = BeautifulSoup(html, 'lxml')
-    result = soup.findAll('a', class_="l") # 为什么bgm.tv会将class名单走一个l？(字母k的后继字母)
+    result = soup.findAll('a', class_="l") # 为什么bgm.tv会将class名称设置为单走一个l？(字母k的后继字母)
     strList = []
     for i in result:
         strList.append(i["href"])
