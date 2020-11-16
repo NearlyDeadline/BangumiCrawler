@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:26:29
 LastEditors: Mike
-LastEditTime: 2020-11-13 15:40:21
+LastEditTime: 2020-11-16 23:04:55
 FilePath: \BangumiCrawler\define.py
 '''  
 
@@ -13,11 +13,13 @@ class PersonJob(Enum):
     脚本 = 4
 
 class Person: # 三次元人物，包括：导演/脚本/配音/人设等
-
     '''
     description: 初始化
+
     param {int} personID: 人设为-1，其余可在Json中查到
+
     param {str} name: 一般为"name_cn"，该项为空时用"name"替代
+    
     param {PersonJob} personJob: 见PersonJob枚举
     '''
     def __init__(self, personID, name, personJob):
@@ -101,11 +103,12 @@ class Bangumi:
     # [Person]: 主要制作人员
     staff = []
 
-    '''
-    description: 输入从api爬取到的全部数据，选择有用的信息进行存储，进行初步的反序列化
-    param {*} subjectJsonDict，已经被读取为dict形式的json
-    '''
     def __init__(self, subjectJsonDict):
+        '''
+        description: 输入从api爬取到的全部数据，选择有用的信息进行存储，进行初步的反序列化
+        
+        param {dict} subjectJsonDict，已经被读取为dict形式的json
+        '''
         self.bangumiID = subjectJsonDict["id"]
         
         if subjectJsonDict["name_cn"]:
@@ -174,13 +177,15 @@ class Bangumi:
                 self.staff.append(Person(staffDict["id"], staffName,PersonJob.脚本))
 
     
-    '''
-    description: 根据评分人数和评分值综合判断该番剧是否值得收录
-    param {dict} subjectJson
-    return {Bool} result
-    '''
     @staticmethod
-    def shouldInclude(subjectJsonDict):
+    def shouldInclude(subjectJsonDict):        
+        '''
+        description: 判断该番剧是否值得收录
+
+        param {dict} subjectJson
+        
+        return {Bool} result
+        '''
         if subjectJsonDict["type"] != 2: 
             # 不是动画的不要
             return False

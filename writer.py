@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:23:40
 LastEditors: Mike
-LastEditTime: 2020-11-13 15:26:01
+LastEditTime: 2020-11-16 23:07:34
 FilePath: \BangumiCrawler\writer.py
 '''
 
@@ -15,22 +15,25 @@ class WriterProcess (Process):
     __endPage = 0 # int, 结束爬取的页码，不包括自己
     __bangumiQueue = None # 存入Bangumi对象的队列
 
-    '''
-    description: 写者进程
-    param {int} beginPage，开始爬取的页码，包括该页
-    param {int} endPage，结束爬取的页码，不包括该页
-    param {Queue} bangumiQueue，存放爬取结果的队列
-    '''
-    def __init__(self, beginPage, endPage, bangumiQueue):
+    def __init__(self, beginPage, endPage, bangumiQueue):           
+        '''
+        description: 写者进程。根据网页页码范围先从网页获取ID，再从API网站获取具体信息JSON，将其简化后放入队列供读者调用
+
+        param {int} beginPage，开始爬取的页码，包括该页
+        
+        param {int} endPage，结束爬取的页码，不包括该页
+
+        param {multiprocessing.Queue} bangumiQueue，存放爬取结果的队列
+        '''
         Process.__init__(self)
         self.__beginPage = beginPage
         self.__endPage = endPage
         self.__bangumiQueue = bangumiQueue
 
-    '''
-    description: 写者爬虫进程主函数。根据ID范围从API网站获取JSON，将其简化后放入队列供读者调用
-    '''
-    def run(self):
+    def run(self):          
+        '''
+        description: 写者爬虫进程主函数
+        '''
         for page in range(self.__beginPage, self.__endPage):
             bangumiIDList = get_subject_id(page)
             for bangumiID in bangumiIDList:

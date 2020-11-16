@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:30:04
 LastEditors: Mike
-LastEditTime: 2020-11-13 15:34:51
+LastEditTime: 2020-11-16 23:08:24
 FilePath: \BangumiCrawler\reader.py
 '''
 
@@ -9,10 +9,10 @@ from py2neo import Graph, Node, Relationship, Schema
 from py2neo.matching import NodeMatcher
 from multiprocessing import Process
 
-'''
-description: Neo4j初始化连接，主程序直接Neo4jConfig()调用构造函数即可
-'''
 class Neo4jConfig:
+    '''
+    description: Neo4j初始化连接，主程序直接Neo4jConfig()调用构造函数即可
+    '''
     host = "127.0.0.1"
     user = "neo4j"
     password = "123456"
@@ -32,12 +32,13 @@ class Neo4jConfig:
 
 
 class ReaderProcess(Process):
+    '''
+    description: 读者进程，从队列里不断拿出Bangumi对象，在Neo4j中创建节点与关系
+
+    param {multiprocessing.Queue} bangumiQueue: 存入Bangumi对象的队列
+    '''
     __bangumiQueue = None 
 
-    '''
-    description: 读者进程
-    param {*} bangumiQueue: multiprocessing.Queue，存入Bangumi对象的队列
-    '''
     def __init__(self, bangumiQueue):
         Process.__init__(self)
         self.__bangumiQueue = bangumiQueue
