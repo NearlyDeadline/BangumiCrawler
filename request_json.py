@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 19:58:06
 LastEditors: Mike
-LastEditTime: 2020-11-16 22:48:36
+LastEditTime: 2020-11-18 14:43:43
 FilePath: \BangumiCrawler\request_json.py
 '''
 
@@ -20,12 +20,17 @@ userAgents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763",
 ]  # 浏览器UserAgent列表
 
+headers = {
+    'User-Agent': random.choice(userAgents)
+}
 
-def get_subject_json(id):
+def get_subject_json(id, responseGroup='medium'):
     '''
     description: 根据番剧id，访问api网站获取番剧详细信息，将其编码为可直接显示的json
     
     param {int} id: 番剧id
+
+    param {string} responseGroup: 'small'或'medium'或'large'的字符串，默认为'medium'
 
     return {string} text
 
@@ -46,10 +51,8 @@ def get_subject_json(id):
     
     注意：还会残留一些奇奇怪怪的字符，json.loads方法中请将strict置为False
     '''
-    headers = {
-        'User-Agent': random.choice(userAgents)
-        }
-    url = 'https://api.bgm.tv/subject/' + str(id) + '?responseGroup=medium'
+
+    url = 'https://api.bgm.tv/subject/' + str(id) + '?responseGroup=' + responseGroup
     text = requests.get(url, headers=headers).text
     text = text.replace("\\/", "/").replace('\\r\\n', '').replace('\\\\', '//').replace('\\"', '\\\\"')
     # 以下冒号左侧均为字面值
@@ -72,12 +75,9 @@ def get_subject_id(page):
     return {[int]} 该页全部id，24个 
     '''
     subjectIDList = []
-    headers = {
-        'User-Agent': random.choice(userAgents)
-        }
     url = 'https://bgm.tv/anime/browser/?sort=rank&page=' + str(page)
-    html = requests.get(url, headers=headers).text
-    soup = BeautifulSoup(html, 'lxml')
+    html = requests.get(url, headers=headers)
+    soup = BeautifulSoup(html.content, 'lxml')
     result = soup.findAll('a', class_="l") # 为什么bgm.tv会将class名称设置为单走一个l？(字母k的后继字母)
     strList = []
     for i in result:

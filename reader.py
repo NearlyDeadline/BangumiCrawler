@@ -1,7 +1,7 @@
 '''
 Date: 2020-11-10 20:30:04
 LastEditors: Mike
-LastEditTime: 2020-11-16 23:08:24
+LastEditTime: 2020-11-18 15:48:12
 FilePath: \BangumiCrawler\reader.py
 '''
 
@@ -27,6 +27,8 @@ class Neo4jConfig:
             schema.create_uniqueness_constraint("角色", "cid")
 
             schema.create_uniqueness_constraint("人物", "name")
+
+            schema.create_uniqueness_constraint("标注", "name")
         except:
             pass
 
@@ -57,15 +59,15 @@ class ReaderProcess(Process):
                 bangumiNode = Node("作品")
                 bangumiNode["bid"] = bangumi.bangumiID
                 bangumiNode["name"] = bangumi.name
-                bangumiNode["放送开始"] = bangumi.pubTime
+                # bangumiNode["放送开始"] = bangumi.pubTime
                 bangumiNode["排名"] = bangumi.rank
                 bangumiNode["评分人数"] = bangumi.ratingTotal
                 bangumiNode["评分值"] = bangumi.ratingScore
-                bangumiNode["想看人数"] = bangumi.collection.wish
-                bangumiNode["看过人数"] = bangumi.collection.collect
-                bangumiNode["在看人数"] = bangumi.collection.doing
-                bangumiNode["搁置人数"] = bangumi.collection.onHold
-                bangumiNode["抛弃人数"] = bangumi.collection.dropped
+                # bangumiNode["想看人数"] = bangumi.collection.wish
+                # bangumiNode["看过人数"] = bangumi.collection.collect
+                # bangumiNode["在看人数"] = bangumi.collection.doing
+                # bangumiNode["搁置人数"] = bangumi.collection.onHold
+                # bangumiNode["抛弃人数"] = bangumi.collection.dropped
                 
                 graph.create(bangumiNode)
                 
@@ -80,22 +82,22 @@ class ReaderProcess(Process):
 
                         graph.create(characterNode)
 
-                    # 创建作品与角色的关系
-                    relationship = Relationship(characterNode, "出演", bangumiNode)
-                    graph.create(relationship)
+                    # 创建作品与角色(Character_Bangumi，简写C_B)的关系
+                    relationshipFromCharacterToBangumi = Relationship(characterNode, "出演", bangumiNode)
+                    graph.create(relationshipFromCharacterToBangumi)
 
                     # 创建角色与人设的关系，注意不是每个角色都有人设
-                    if character.setting:
-                        settingNode = nodematcher.match("人物", name=character.setting.name).first()
-                        if not settingNode:
-                            settingNode = Node("人物")
-                            settingNode["pid"] = character.setting.personID
-                            settingNode["name"] = character.setting.name
+                    # if character.setting:
+                    #     settingNode = nodematcher.match("人物", name=character.setting.name).first()
+                    #     if not settingNode:
+                    #         settingNode = Node("人物")
+                    #         settingNode["pid"] = character.setting.personID
+                    #         settingNode["name"] = character.setting.name
 
-                            graph.create(settingNode)
+                    #         graph.create(settingNode)
                         
-                        relationship = Relationship(settingNode, "设定", characterNode)
-                        graph.create(relationship)
+                    #     relationship = Relationship(settingNode, "设定", characterNode)
+                    #     graph.create(relationship)
 
                     # 遍历该角色的所有配音，去创建人物结点、配音与角色的关系
                     for actor in character.actors:
@@ -107,11 +109,11 @@ class ReaderProcess(Process):
 
                             graph.create(personNode)
 
-                        # 创建配音与角色的关系        
-                        relationship = Relationship(personNode, "配音", characterNode)
-                        graph.create(relationship)
+                        # 创建配音与角色(Person_Character，简写P_C)的关系        
+                        relationshipFromPersonToCharacter = Relationship(personNode, "配音", characterNode)
+                        graph.create(relationshipFromPersonToCharacter)
 
-                # 遍历该作品的所有制作人员，去创建人物结点、人物与作品的关系
+                # 遍历该作品的所有制作人员，去创建人物结点、人物与作品(Person_Bangumi，简写P_B)的关系
                 for staffPerson in bangumi.staff:
                     staffNode = nodematcher.match("人物", name=staffPerson.name).first()
                     if not staffNode:
@@ -120,5 +122,21 @@ class ReaderProcess(Process):
                         staffNode["name"] = staffPerson.name
                         graph.create(staffNode)
 
-                    relationship = Relationship(staffNode, "%s" % staffPerson.personJob.name, bangumiNode)
-                    graph.create(relationship)
+                    relationshipFromPersonToBangumi = Relationship(staffNode, "%s" % staffPerson.personJob.name, bangumiNode)
+                    graph.create(relationshipFromPersonToBangumi)
+
+                # 遍历该作品的所有标注，去创建标注与作品(Bangumi_Tag，简写B_T)的关系
+                for tagName, tagCount in bangumi.tags.items():
+                    tagNode = nodematcher.match("标注", name = tagName).first()
+                    if not tagNode:
+                        tagNode = Node("标注")
+                        tagNode["name"] = tagName
+                        graph.create(tagNode)
+
+                    relationshipFromBangumiToTag = Relationship(bangumiNode, "拥有标注", tagNode)
+                    relationshipFromBangumiToTag["标注人数"] = tagCount
+                    graph.create(relationshipFromBangumiToTag)
+            
+            # end if
+        # end while
+    # end run(self)

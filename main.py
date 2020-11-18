@@ -1,13 +1,15 @@
 '''
 Date: 2020-11-10 09:54:57
 LastEditors: Mike
-LastEditTime: 2020-11-12 19:52:10
+LastEditTime: 2020-11-18 16:17:27
 FilePath: \BangumiCrawler\main.py
 '''
 
 from writer import WriterProcess
 from multiprocessing import Queue
 from reader import ReaderProcess, Neo4jConfig
+import sys
+sys.setrecursionlimit(1000000) # 为什么需要增加递归深度呢
 
 if __name__ == "__main__":
     writerCount = 4 # 写者爬虫进程数量

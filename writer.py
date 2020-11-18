@@ -1,14 +1,14 @@
 '''
 Date: 2020-11-10 20:23:40
 LastEditors: Mike
-LastEditTime: 2020-11-16 23:07:34
+LastEditTime: 2020-11-18 14:53:07
 FilePath: \BangumiCrawler\writer.py
 '''
 
 from request_json import get_subject_json, get_subject_id
 from multiprocessing import Process
 import json
-from define import Bangumi
+from define import Bangumi, shouldInclude
 
 class WriterProcess (Process):
     __beginPage = 0 # int, 开始爬取的页码，包括自己
@@ -39,7 +39,7 @@ class WriterProcess (Process):
             for bangumiID in bangumiIDList:
                 try:
                     subjectJsonDict = json.loads(get_subject_json(bangumiID), strict=False)
-                    if isinstance(subjectJsonDict, dict) and subjectJsonDict.get("code", None) == None and Bangumi.shouldInclude(subjectJsonDict):
+                    if isinstance(subjectJsonDict, dict) and subjectJsonDict.get("code", None) == None and shouldInclude(subjectJsonDict):
                     # 如果读取到了一个字典，并且没有code一栏，视为有效数据
                     # 我也不知道为什么bgm.tv设置成只有错误才返回错误码
                     # strict=False: ID=62285, 16805时出现奇怪的字符
